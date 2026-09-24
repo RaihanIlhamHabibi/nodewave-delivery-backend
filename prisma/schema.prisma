@@ -1,0 +1,120 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  PM
+  INTERNAL
+  CLIENT
+}
+
+enum Department {
+  PRODUCT
+  UI_UX
+  FRONTEND
+  BACKEND
+  CLIENT
+}
+
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  BLOCKED
+  DONE
+}
+
+model User {
+  id           String       @id @default(cuid())
+  email        String       @unique
+  name         String
+  passwordHash String
+  role         Role
+  department   Department?
+  projectId    String?
+  project      Project?     @relation(fields: [projectId], references: [id])
+  createdAt    DateTime     @default(now())
+  tasks        Task[]       @relation("assignee")
+  auditLogs    AuditLog[]
+  attachments  Attachment[]
+  comments     Comment[]
+}
+
+model Project {
+  id         String   @id @default(cuid())
+  name       String
+  clientName String
+  users      User[]
+  tasks      Task[]
+  createdAt  DateTime @default(now())
+}
+
+model Task {
+  id            String           @id @default(cuid())
+  projectId     String
+  project       Project          @relation(fields: [projectId], references: [id])
+  title         String
+  description   String
+  department    Department
+  status        TaskStatus       @default(TODO)
+  clientVisible Boolean          @default(false)
+  assigneeId    String?
+  assignee      User?            @relation("assignee", fields: [assigneeId], references: [id])
+  version       Int              @default(1)
+  deletedAt     DateTime?
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+  dependencies  TaskDependency[] @relation("dependent")
+  dependents    TaskDependency[] @relation("dependsOn")
+  auditLogs     AuditLog[]
+  attachments   Attachment[]
+  comments      Comment[]
+}
+
+model TaskDependency {
+  id          String @id @default(cuid())
+  taskId      String
+  dependsOnId String
+  task        Task   @relation("dependent", fields: [taskId], references: [id])
+  dependsOn   Task   @relation("dependsOn", fields: [dependsOnId], references: [id])
+
+  @@unique([taskId, dependsOnId])
+}
+
+model AuditLog {
+  id            String   @id @default(cuid())
+  taskId        String
+  task          Task     @relation(fields: [taskId], references: [id])
+  userId        String
+  user          User     @relation(fields: [userId], references: [id])
+  changedColumn String
+  oldValue      String?
+  newValue      String?
+  createdAt     DateTime @default(now())
+}
+
+model Attachment {
+  id         String   @id @default(cuid())
+  taskId     String
+  task       Task     @relation(fields: [taskId], references: [id])
+  uploadedBy String
+  user       User     @relation(fields: [uploadedBy], references: [id])
+  fileName   String
+  mimeType   String
+  url        String
+  createdAt  DateTime @default(now())
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  taskId    String
+  task      Task     @relation(fields: [taskId], references: [id])
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  body      String
+  createdAt DateTime @default(now())
+}

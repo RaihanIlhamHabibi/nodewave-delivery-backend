@@ -1,0 +1,32 @@
+name: Backend CI
+on:
+  push:
+  pull_request:
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: nodewave
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres -d nodewave"
+          --health-interval 10s --health-timeout 5s --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+      - run: bunx prisma generate
+      - run: bun run typecheck
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/nodewave
+      - run: bunx prisma migrate deploy
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/nodewave
+      - run: bun test
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/nodewave
