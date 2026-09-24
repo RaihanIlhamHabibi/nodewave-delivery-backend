@@ -9,6 +9,7 @@ const prisma = new PrismaClient();
 export const app = new Hono();
 const secret = process.env.JWT_SECRET ?? 'development-secret';
 app.use('*', cors({ origin: process.env.CORS_ORIGIN ?? 'http://localhost:3000' }));
+app.get('/', (c) => c.json({ status: 'ok', service: 'nodewave-delivery-api' }));
 app.get('/health', (c) => c.json({ status: 'ok', service: 'nodewave-delivery-api' }));
 const publicRoutes = new Hono();
 publicRoutes.post('/login', async (c) => { const body = z.object({ email: z.string().email(), password: z.string() }).parse(await c.req.json()); const user = await prisma.user.findUnique({ where: { email: body.email } }); if (!user || user.passwordHash !== `demo:${body.password}`) return c.json({ error: 'Invalid credentials' }, 401); return c.json({ token: sign({ sub: user.id, role: user.role, projectId: user.projectId }, secret, { expiresIn: '8h' }), user: { id: user.id, name: user.name, email: user.email, role: user.role, department: user.department, projectId: user.projectId } }); });
