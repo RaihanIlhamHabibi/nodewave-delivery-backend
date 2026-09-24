@@ -7,4 +7,4 @@ COPY src ./src
 COPY tsconfig.json ./
 RUN bunx prisma generate
 EXPOSE 4000
-CMD ["sh", "-c", "bunx prisma migrate deploy && bun src/index.ts"]
+CMD ["sh", "-c", "bunx prisma migrate deploy && bun --env-file=.env prisma/seed.ts && bun src/index.ts"]

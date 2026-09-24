@@ -2,6 +2,11 @@ import { PrismaClient, Role, Department, TaskStatus } from '@prisma/client';
 const prisma = new PrismaClient();
 const hash = (value: string) => `demo:${value}`;
 async function main() {
+  const existingProject = await prisma.project.findFirst({ include: { users: true } });
+  if (existingProject && existingProject.users.length > 0) {
+    console.log(`Seed already present in project ${existingProject.id}`);
+    return;
+  }
   await prisma.auditLog.deleteMany(); await prisma.taskDependency.deleteMany(); await prisma.task.deleteMany(); await prisma.user.deleteMany(); await prisma.project.deleteMany();
   const project = await prisma.project.create({ data: { name: 'Atlas Commerce Platform', clientName: 'Atlas Group' } });
   const pm = await prisma.user.create({ data: { email: 'pm@nodewave.test', name: 'Maya PM', passwordHash: hash('password'), role: Role.PM, department: Department.PRODUCT, projectId: project.id } });
